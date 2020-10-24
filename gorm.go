@@ -18,12 +18,9 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-var noUpdateContent = "No content found to be updated"
-
 // StoreItem data item
 type StoreItem struct {
 	gorm.Model
-	//ID        int64 `gorm:"AUTO_INCREMENT"`
 	ExpiredAt int64
 	Code      string `gorm:"type:varchar(512)"`
 	Access    string `gorm:"type:varchar(512)"`
@@ -152,7 +149,7 @@ func (s *Store) Close() {
 func (s *Store) errorf(format string, args ...interface{}) {
 	if s.stdout != nil {
 		buf := fmt.Sprintf(format, args...)
-		s.stdout.Write([]byte(buf))
+		_, _ = s.stdout.Write([]byte(buf))
 	}
 }
 

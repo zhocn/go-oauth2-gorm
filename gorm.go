@@ -1,6 +1,7 @@
 package oauth2gorm
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -8,8 +9,8 @@ import (
 	"os"
 	"time"
 
-	"gopkg.in/oauth2.v3"
-	"gopkg.in/oauth2.v3/models"
+	"github.com/go-oauth2/oauth2/v4"
+	"github.com/go-oauth2/oauth2/v4/models"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
@@ -158,20 +159,18 @@ func (s *Store) gc() {
 		now := time.Now().Unix()
 		var count int64
 		if err := s.db.Table(s.tableName).Where("expired_at <= ?", now).Or("code = ? and access = ? AND refresh = ?", "", "", "").Count(&count).Error; err != nil {
-			s.errorf("[ERROR]:%s\n", err)
 			return
 		}
 		if count > 0 {
 			// not soft delete.
 			if err := s.db.Table(s.tableName).Where("expired_at <= ?", now).Or("code = ? and access = ? AND refresh = ?", "", "", "").Unscoped().Delete(&StoreItem{}).Error; err != nil {
-				s.errorf("[ERROR]:%s\n", err)
 			}
 		}
 	}
 }
 
 // Create create and store the new token information
-func (s *Store) Create(info oauth2.TokenInfo) error {
+func (s *Store) Create(ctx context.Context, info oauth2.TokenInfo) error {
 	jv, err := json.Marshal(info)
 	if err != nil {
 		return err
@@ -197,21 +196,21 @@ func (s *Store) Create(info oauth2.TokenInfo) error {
 }
 
 // RemoveByCode delete the authorization code
-func (s *Store) RemoveByCode(code string) error {
+func (s *Store) RemoveByCode(ctx context.Context, code string) error {
 	return s.db.Table(s.tableName).Where("code = ?", code).Update("code", "").Error
 }
 
 // RemoveByAccess use the access token to delete the token information
-func (s *Store) RemoveByAccess(access string) error {
+func (s *Store) RemoveByAccess(ctx context.Context, access string) error {
 	return s.db.Table(s.tableName).Where("access = ?", access).Update("access", "").Error
 }
 
 // RemoveByRefresh use the refresh token to delete the token information
-func (s *Store) RemoveByRefresh(refresh string) error {
+func (s *Store) RemoveByRefresh(ctx context.Context, refresh string) error {
 	return s.db.Table(s.tableName).Where("refresh = ?", refresh).Update("refresh", "").Error
 }
 
-func (s *Store) toTokenInfo(data string) oauth2.TokenInfo {
+func (s *Store) toTokenInfo(ctx context.Context, data string) oauth2.TokenInfo {
 	var tm models.Token
 	err := json.Unmarshal([]byte(data), &tm)
 	if err != nil {
@@ -221,7 +220,7 @@ func (s *Store) toTokenInfo(data string) oauth2.TokenInfo {
 }
 
 // GetByCode use the authorization code for token information data
-func (s *Store) GetByCode(code string) (oauth2.TokenInfo, error) {
+func (s *Store) GetByCode(ctx context.Context, code string) (oauth2.TokenInfo, error) {
 	if code == "" {
 		return nil, nil
 	}
@@ -234,11 +233,11 @@ func (s *Store) GetByCode(code string) (oauth2.TokenInfo, error) {
 		return nil, nil
 	}
 
-	return s.toTokenInfo(item.Data), nil
+	return s.toTokenInfo(ctx, item.Data), nil
 }
 
 // GetByAccess use the access token for token information data
-func (s *Store) GetByAccess(access string) (oauth2.TokenInfo, error) {
+func (s *Store) GetByAccess(ctx context.Context, access string) (oauth2.TokenInfo, error) {
 	if access == "" {
 		return nil, nil
 	}
@@ -251,11 +250,11 @@ func (s *Store) GetByAccess(access string) (oauth2.TokenInfo, error) {
 		return nil, nil
 	}
 
-	return s.toTokenInfo(item.Data), nil
+	return s.toTokenInfo(ctx, item.Data), nil
 }
 
 // GetByRefresh use the refresh token for token information data
-func (s *Store) GetByRefresh(refresh string) (oauth2.TokenInfo, error) {
+func (s *Store) GetByRefresh(ctx context.Context, refresh string) (oauth2.TokenInfo, error) {
 	if refresh == "" {
 		return nil, nil
 	}
@@ -268,5 +267,5 @@ func (s *Store) GetByRefresh(refresh string) (oauth2.TokenInfo, error) {
 		return nil, nil
 	}
 
-	return s.toTokenInfo(item.Data), nil
+	return s.toTokenInfo(ctx, item.Data), nil
 }

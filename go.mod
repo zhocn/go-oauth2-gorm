@@ -1,8 +1,8 @@
-module github.com/zhocn/go-oauth2-gorm
+module github.com/zhocn/go-oauth2-gorm/v2
 
 require (
+	github.com/go-oauth2/oauth2/v4 v4.1.2
 	github.com/smartystreets/goconvey v1.6.4
-	gopkg.in/oauth2.v3 v3.12.0
 	gorm.io/driver/mysql v1.0.1
 	gorm.io/driver/postgres v1.0.1
 	gorm.io/driver/sqlite v1.1.3
